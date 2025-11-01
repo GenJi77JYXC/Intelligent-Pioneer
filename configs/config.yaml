@@ -1,0 +1,20 @@
+server:
+  port: "8080"
+  mode: "debug" # debug, release, test
+
+database:
+  postgres:
+    host: "localhost"
+    port: "5432"
+    user: "pioneer_user"
+    password: "pioneer_password"
+    dbname: "pioneer_db"
+    sslmode: "disable"
+
+  elasticsearch:
+    addresses:
+      - "http://localhost:9200"
+
+kafka:
+  brokers:
+    - "localhost:9092"
