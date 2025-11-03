@@ -18,17 +18,14 @@ import (
 func main() {
 	fmt.Println("🚀 Starting Intelligent-Pioneer... The journey begins!")
 
-	// TODO: 1. Load configuration (Viper)
-
-	// 1. 加载配置 (这是我们新加的第一步)
+	// 1. Load configuration (Viper)
 	config.LoadConfig()
 
 	// 为了验证配置是否加载成功，我们可以打印一些值
 	fmt.Println("Server mode:", config.C.Server.Mode)
 	fmt.Printf("PostgreSQL Host: %s, Port: %s\n", config.C.Database.Postgres.Host, config.C.Database.Postgres.Port)
 	fmt.Println("Kafka Brokers:", config.C.Kafka.Brokers)
-	// TODO: 2. Initialize logger (Zap/Logrus)
-	// 2. 初始化日志系统
+	// 2. Initialize logger (Zap/Logrus)
 	logger.InitLogger()
 
 	// 使用全局Logger打印日志
@@ -37,10 +34,10 @@ func main() {
 		"server_mode", config.C.Server.Mode,
 		"postgres_host", config.C.Database.Postgres.Host,
 	)
-	// TODO: 3. Initialize database connections (PostgreSQL, Elasticsearch)
+	// 3. Initialize database connections (PostgreSQL, Elasticsearch)
 	store.InitPostgres()
 	store.InitElasticsearch()
-	// TODO: 4. Initialize message queue producer/consumer (Kafka)
+	// 4. Initialize message queue producer/consumer (Kafka)
 	mq.InitKafka()
 	// 示例：启动后发送一条测试消息
 	//go func() {
@@ -58,9 +55,9 @@ func main() {
 	//}()
 	//
 	//time.Sleep(20 * time.Second)
-	// TODO: 5. Initialize HTTP server (Gin) and register routes
+	// 5. Initialize HTTP server (Gin) and register routes
 	router := api.NewRouter()
-	// TODO: 6. Start the server and wait for shutdown signal
+	// 6. Start the server and wait for shutdown signal
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", config.C.Server.Port),
 		Handler: router,
