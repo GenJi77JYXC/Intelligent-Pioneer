@@ -46,7 +46,10 @@ func InitPostgres() {
 func migrateDatabase() {
 	logger.L.Info("Running database migrations...")
 	// GORM 会自动检查 `Agent` 结构体对应的表是否存在，不存在则创建
-	err := DB.AutoMigrate(&model.Agent{})
+	err := DB.AutoMigrate(
+		&model.Agent{},
+		&model.Workflow{},
+	)
 	if err != nil {
 		logger.L.Fatalw("Failed to migrate database", "error", err)
 	}

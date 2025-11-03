@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/api"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/config"
+	"github.com/GenJi77JYXC/intelligent-pioneer/internal/core/engine"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/logger"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/mq"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/store"
@@ -55,6 +56,10 @@ func main() {
 	//}()
 	//
 	//time.Sleep(20 * time.Second)
+
+	// 初始化任务管理器/引擎
+	engine.InitTaskManager()
+
 	// 5. Initialize HTTP server (Gin) and register routes
 	router := api.NewRouter()
 	// 6. Start the server and wait for shutdown signal
