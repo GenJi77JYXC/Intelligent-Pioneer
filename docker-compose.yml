@@ -28,6 +28,18 @@ services:
       - es_data:/usr/share/elasticsearch/data
     restart: unless-stopped
 
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.5.3 # 版本必须与 Elasticsearch 保持一致
+    container_name: pioneer_kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]' # 告诉 Kibana 去哪里找 ES
+      I18N_LOCALE: "zh-CN"
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     container_name: pioneer_zookeeper
