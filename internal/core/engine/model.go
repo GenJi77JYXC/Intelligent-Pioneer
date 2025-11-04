@@ -28,7 +28,7 @@ type Workflow struct {
 	ID            string `gorm:"primaryKey"` // 使用 UUID 作为主键
 	KBID          string
 	AgentID       string
-	Status        string // "pending", "diagnosing", "remediating", "completed", "failed"
+	Status        string // "pending(待处理)", "diagnosing(诊断中)", "remediating(修复中)", "completed(已完成)", "failed(已失败)"
 	CurrentTaskID string // 当前正在执行的任务ID
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
