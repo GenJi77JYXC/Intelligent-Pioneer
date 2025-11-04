@@ -9,6 +9,7 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	Kafka    KafkaConfig    `mapstructure:"kafka"`
 	Logger   LoggerConfig   `mapstructure:"logger"`
+	Agent    AgentConfig    `mapstructure:"agent"`
 }
 
 // ServerConfig 对应 server 部分的配置
@@ -55,6 +56,12 @@ type LoggerConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
 	Output string `mapstructure:"output"`
+}
+
+// AgentConfig 对应 agent 部分的配置
+type AgentConfig struct {
+	HeartbeatTimeout string `mapstructure:"heartbeat_timeout"`
+	OfflineCheckCron string `mapstructure:"offline_check_cron"`
 }
 
 // C 是一个全局变量，用于存储加载后的配置

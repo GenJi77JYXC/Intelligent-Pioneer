@@ -8,6 +8,7 @@ import (
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/core/engine"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/logger"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/mq"
+	"github.com/GenJi77JYXC/intelligent-pioneer/internal/scheduler"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/store"
 	"net/http"
 	"os"
@@ -60,6 +61,10 @@ func main() {
 	// 初始化任务管理器/引擎
 	engine.InitTaskManager()
 
+	// 定时器初始化
+	scheduler.InitScheduler()
+	logger.L.Info("✅ All services initialized successfully.")
+
 	// 5. Initialize HTTP server (Gin) and register routes
 	router := api.NewRouter()
 	// 6. Start the server and wait for shutdown signal
@@ -84,6 +89,9 @@ func main() {
 	<-quit
 
 	logger.L.Info("Shutting down server...")
+
+	// 在关闭 HTTP 服务器之前或之后，停止调度器
+	scheduler.StopScheduler()
 
 	// 创建一个有超时的 context
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
