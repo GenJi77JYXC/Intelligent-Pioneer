@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/core/engine"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/logger"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/model"
@@ -8,8 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"net/http"
-	"time"
 )
 
 // RegisterAgent 处理 Agent 注册请求
@@ -18,7 +19,7 @@ func RegisterAgent(c *gin.Context) {
 	var req RegisterAgentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.L.Warnw("Invalid agent registration request", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request parameters: " + err.Error()})
+		ParamError(c, err.Error())
 		return
 	}
 
@@ -36,7 +37,7 @@ func RegisterAgent(c *gin.Context) {
 	if result.Error == nil {
 		// 如果找到了记录，说明已经注册过，直接返回已有的 ID
 		logger.L.Infow("Agent already registered, returning existing ID", "agent_id", existingAgent.UUID)
-		c.JSON(http.StatusOK, RegisterAgentResponse{
+		Result(c, http.StatusOK, "Agent already registered.", RegisterAgentResponse{
 			AgentID: existingAgent.UUID,
 			Message: "Agent already registered.",
 		})
@@ -45,7 +46,7 @@ func RegisterAgent(c *gin.Context) {
 	// 如果错误不是 "record not found"，说明是其他数据库错误
 	if result.Error != gorm.ErrRecordNotFound {
 		logger.L.Errorw("Database error while checking for existing agent", "error", result.Error)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		Result(c, http.StatusInternalServerError, "Database error", gin.H{"error": "Database error"})
 		return
 	}
 
@@ -64,14 +65,14 @@ func RegisterAgent(c *gin.Context) {
 	createResult := store.DB.Create(&newAgent)
 	if createResult.Error != nil {
 		logger.L.Errorw("Failed to create new agent in database", "error", createResult.Error)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register agent"})
+		Result(c, http.StatusInternalServerError, "Failed to register agent", gin.H{"error": "Failed to register agent"})
 		return
 	}
 
 	logger.L.Infow("New agent registered successfully", "agent_id", newAgent.UUID)
 
 	// 5. 返回成功响应和新的 agent_id
-	c.JSON(http.StatusCreated, RegisterAgentResponse{
+	Success(c, RegisterAgentResponse{
 		AgentID: newAgent.UUID,
 		Message: "Agent registered successfully.",
 	})
@@ -84,7 +85,7 @@ func Heartbeat(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// 对于频繁调用的心跳接口，可以简化日志，避免日志泛滥
 		// logger.L.Warnw("Invalid heartbeat request", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: agent_id is required."})
+		Result(c, http.StatusBadRequest, "Invalid request: agent_id is required.", gin.H{"error": "Invalid request: agent_id is required."})
 		return
 	}
 
@@ -101,14 +102,14 @@ func Heartbeat(c *gin.Context) {
 	// 3. 检查更新操作的结果
 	if result.Error != nil {
 		logger.L.Errorw("Failed to update agent heartbeat in database", "agent_id", req.AgentID, "error", result.Error)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		Result(c, http.StatusInternalServerError, "Database error", gin.H{"error": "Database error"})
 		return
 	}
 
 	// RowsAffected 返回受影响的行数。如果为 0，说明没有找到对应的 Agent
 	if result.RowsAffected == 0 {
 		logger.L.Warnw("Heartbeat received from an unknown or unregistered agent", "agent_id", req.AgentID)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found. Please register first."})
+		Result(c, http.StatusInternalServerError, "Database error", gin.H{"error": "Database error"})
 		return
 	}
 
@@ -116,7 +117,7 @@ func Heartbeat(c *gin.Context) {
 	// logger.L.Debugw("Heartbeat updated for agent", "agent_id", req.AgentID)
 
 	// 4. 返回成功响应
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	Success(c, gin.H{"status": "ok"})
 	logger.L.Info("Received agent heartbeat")
 }
 
@@ -125,7 +126,7 @@ func GetTasks(c *gin.Context) {
 	// 1. 从查询参数中获取 agent_id
 	agentID := c.Query("agent_id")
 	if agentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Query parameter 'agent_id' is required."})
+		Result(c, http.StatusBadRequest, "Query parameter 'agent_id' is required.", gin.H{})
 		return
 	}
 
@@ -142,14 +143,15 @@ func GetTasks(c *gin.Context) {
 		// 如果返回 nil，说明是超时，没有任务
 		// 返回 204 No Content 是一个很好的实践，表示请求成功，但没有内容返回
 		logger.L.Debugw("Polling timeout, no tasks for agent", "agent_id", agentID)
-		c.Status(http.StatusNoContent)
+		Result(c, http.StatusNoContent, "查询成功", gin.H{"msg": "表示请求成功，但没有内容返回，返回空任务列表", "tasks": []string{}})
+		return
 	} else {
 		// 如果获取到了任务，将其序列化为 JSON 返回
 		logger.L.Infow("Dispatched task to agent via polling", "agent_id", agentID, "task_id", task.ID)
 		c.JSON(http.StatusOK, task)
+		Result(c, http.StatusOK, "查询成功", gin.H{"data": task})
+		return
 	}
-	logger.L.Info("Agent polling for tasks...")
-	c.JSON(http.StatusOK, gin.H{"tasks": []string{}}) // 暂时返回空任务列表
 }
 
 // PostTaskResults 处理 Agent 上报任务结果的请求
@@ -158,13 +160,13 @@ func PostTaskResults(c *gin.Context) {
 	var result engine.TaskResult
 	if err := c.ShouldBindJSON(&result); err != nil {
 		logger.L.Warnw("Invalid task result submission", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
+		Result(c, http.StatusBadRequest, "Invalid request body", gin.H{"error": "Invalid request body " + err.Error()})
 		return
 	}
 
 	// 简单的校验，确保核心字段不为空
 	if result.TaskID == "" || result.AgentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "task_id and agent_id are required."})
+		Result(c, http.StatusBadRequest, "Invalid request body", gin.H{"error": "Invalid request body"})
 		return
 	}
 
@@ -182,6 +184,49 @@ func PostTaskResults(c *gin.Context) {
 
 	// 3. 立即返回成功响应给 Agent
 	// 这告诉 Agent：“答卷已收到，你可以去领下一份卷子了（再次调用 GetTasks）”。
-	c.JSON(http.StatusOK, gin.H{"status": "result received and is being processed"})
+	Success(c, gin.H{"status": "result received and is being processed"})
 	logger.L.Info("Received task results from agent")
+}
+
+type AgentInfo struct {
+	ID        uint      `json:"id"`
+	UUID      string    `json:"uuid"`
+	Hostname  string    `json:"hostname"`
+	IPAddress string    `json:"ip_address"`
+	OS        string    `json:"os"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"` // 这就是最后心跳时间
+}
+
+// GetAllAgents 获取所有已注册的 Agent
+func GetAllAgents(c *gin.Context) {
+	var agents []model.Agent
+
+	// Preload(clause.Associations) 可以用于预加载关联数据，这里暂时不需要
+	// Order("updated_at desc") 让我们把最近活跃的 Agent 排在前面
+	result := store.DB.Order("updated_at desc").Find(&agents)
+
+	if result.Error != nil {
+		logger.L.Errorw("Failed to get all agents from database", "error", result.Error)
+		Result(c, http.StatusInternalServerError, "Database error", gin.H{"error": "Database error"})
+		return
+	}
+
+	// 将数据库模型转换为对外的 DTO (Data Transfer Object)
+	var agentInfos []AgentInfo
+	for _, agent := range agents {
+		agentInfos = append(agentInfos, AgentInfo{
+			ID:        agent.ID,
+			UUID:      agent.UUID,
+			Hostname:  agent.Hostname,
+			IPAddress: agent.IPAddress,
+			OS:        agent.OS,
+			Status:    agent.Status,
+			CreatedAt: agent.CreatedAt,
+			UpdatedAt: agent.UpdatedAt,
+		})
+	}
+
+	Success(c, agentInfos)
 }

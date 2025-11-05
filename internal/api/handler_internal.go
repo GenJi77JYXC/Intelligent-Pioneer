@@ -1,12 +1,13 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/core/engine"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/logger"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/model"
 	"github.com/GenJi77JYXC/intelligent-pioneer/internal/store"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // TriggerKB 手动触发一个知识库任务
@@ -15,7 +16,7 @@ func TriggerKB(c *gin.Context) {
 	var req TriggerKBRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.L.Warnw("Invalid request to trigger KB", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request parameters: " + err.Error()})
+		ParamError(c, err.Error())
 		return
 	}
 
@@ -27,7 +28,7 @@ func TriggerKB(c *gin.Context) {
 	result := store.DB.Where("uuid = ? AND status = ?", req.AgentID, "online").First(&agent)
 	if result.Error != nil {
 		logger.L.Warnw("Agent not found or not online for KB trigger", "agent_id", req.AgentID, "error", result.Error)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Agent not found or is offline."})
+		Error(c, http.StatusNotFound, "Agent not found or is offline.")
 		return
 	}
 
@@ -44,7 +45,7 @@ func TriggerKB(c *gin.Context) {
 
 	// 4. 返回成功响应
 	// 当 StartKBWorkflow 返回 workflowID 时，在这里一并返回
-	c.JSON(http.StatusOK, gin.H{
+	Success(c, gin.H{
 		"message":     "KB workflow triggered successfully.",
 		"workflow_id": workflowID,
 	})
@@ -53,5 +54,5 @@ func TriggerKB(c *gin.Context) {
 
 // HealthCheck 是一个简单的健康检查端点
 func HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "UP"})
+	Success(c, gin.H{"status": "UP"})
 }
