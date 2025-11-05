@@ -21,3 +21,6 @@
 # Build artifacts
 bin/
 vendor/
+/intelligent-pioneer-frontend/node_modules
+/intelligent-pioneer-frontend/.gitignore
+go.sum
