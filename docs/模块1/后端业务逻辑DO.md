@@ -1,6 +1,4 @@
-# 后端业务逻辑TODO
-
-**你需要完成的 TODO 事项（下一步）：**
+# 后端业务逻辑DO
 
 1. **实现 handler_internal.go 中的 TriggerKB**：让它调用 engine.StartKBWorkflow。
 
@@ -25,8 +23,6 @@
       - 将查询到的这些“超时”的 Agent 状态批量更新为 offline。
 
    这个机制确保了即使 Agent 异常掉线（断电、断网），后端也能在一定延迟后准确地反映出它的离线状态。
-
-
 
 
 
